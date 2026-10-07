@@ -275,7 +275,9 @@
                 else if (currentTab === 'weather') url = `${API}/cities`;
                 else if (currentTab === 'stats') url = `${API}/stats`;
                 else if (currentTab === 'admin') url = `${API}/admin/users`;
-
+                console.log('URL:', url);
+                console.log('initData:', window.Telegram?.WebApp?.initData);
+                console.log('Headers:', { 'X-Tg-Init-Data': window.Telegram?.WebApp?.initData });
                 const resp = await fetch(url);
                 const data = await resp.json();
 
