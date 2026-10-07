@@ -109,7 +109,6 @@
         .chart { display: flex; align-items: flex-end; gap: 3px; height: 120px; padding: 10px 0; }
         .chart-bar { flex: 1; background: linear-gradient(to top, #5B7C99, #6a9bc4); border-radius: 4px 4px 0 0; min-height: 2px; transition: all 0.3s; position: relative; }
         .chart-bar:hover { background: #6a9bc4; }
-        .chart-label { font-size: 9px; color: #6a6a7a; text-align: center; margin-top: 4px; }
         .reminder-item { display: flex; align-items: center; gap: 10px; padding: 10px 0; border-bottom: 1px solid #2a2a3a; }
         .reminder-item:last-child { border-bottom: none; }
         .reminder-time { font-size: 13px; color: #6a9bc4; font-weight: 600; }
@@ -143,15 +142,17 @@
 
     <script>
         const API = 'https://elude-mobilize-salvaging.ngrok-free.dev';
-        // Обходим предупреждение ngrok
-const originalFetch = window.fetch;
-window.fetch = function(url, options = {}) {
-    if (typeof url === 'string' && url.includes('ngrok')) {
-        options.headers = options.headers || {};
-        options.headers['ngrok-skip-browser-warning'] = 'true';
-    }
-    return originalFetch(url, options);
-};
+
+        // Обход предупреждения ngrok
+        const originalFetch = window.fetch;
+        window.fetch = function(url, options = {}) {
+            if (typeof url === 'string' && url.includes('ngrok')) {
+                options.headers = options.headers || {};
+                options.headers['ngrok-skip-browser-warning'] = 'true';
+            }
+            return originalFetch(url, options);
+        };
+
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
@@ -256,7 +257,7 @@ window.fetch = function(url, options = {}) {
                 content.innerHTML = html;
                 refreshIcons();
             } catch (e) {
-                content.innerHTML = `<div class="empty">Ошибка загрузки: ${e.message}<br><br>Убедись, что бэкенд запущен (py api.py)</div>`;
+                content.innerHTML = `<div class="empty">Ошибка загрузки: ${e.message}<br><br>Убедись, что бэкенд и ngrok запущены</div>`;
             }
         }
 
