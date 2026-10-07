@@ -509,7 +509,11 @@
                 const resp = await fetch(`${API}/routes/${id}/link`);
                 if (!resp.ok) throw new Error('Маршрут не найден');
                 const data = await resp.json();
-                window.open(data.link, '_blank');
+                if (window.Telegram && window.Telegram.WebApp) {
+                    window.Telegram.WebApp.openLink(data.link);
+                } else {
+                    window.open(data.link, '_blank');
+                }
             } catch (e) {
                 alert('Ошибка: ' + e.message);
             }
