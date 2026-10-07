@@ -116,6 +116,7 @@
         .ripple::after { content: ''; position: absolute; top: 50%; left: 50%; width: 5px; height: 5px; background: rgba(255,255,255,0.4); opacity: 0; border-radius: 100%; transform: scale(1) translate(-50%, -50%); transform-origin: 50% 50%; }
         .ripple:active::after { animation: ripple 0.6s ease-out; }
         @keyframes ripple { 0% { transform: scale(0) translate(-50%, -50%); opacity: 0.6; } 100% { transform: scale(30) translate(-50%, -50%); opacity: 0; } }
+        .route-link-hint { font-size: 12px; color: #5B7C99; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
     </style>
 </head>
 <body>
@@ -143,7 +144,6 @@
     <script>
         const API = 'https://elude-mobilize-salvaging.ngrok-free.dev';
 
-        // Обход предупреждения ngrok
         const originalFetch = window.fetch;
         window.fetch = function(url, options = {}) {
             if (typeof url === 'string' && url.includes('ngrok')) {
@@ -244,13 +244,12 @@
                     });
                 } else if (currentTab === 'routes') {
                     data.forEach(route => {
-                        html += `<div class="card">
+                        html += `<div class="card" style="cursor:pointer;" onclick="openRouteLink(${route.id})">
                             <div class="card-actions">
-                                <button class="btn-icon" onclick="showRouteTime(${route.id})"><i data-lucide="clock"></i></button>
-                                <button class="btn-icon" onclick="deleteItem('routes', ${route.id})"><i data-lucide="trash-2"></i></button>
+                                <button class="btn-icon" onclick="event.stopPropagation(); deleteItem('routes', ${route.id})"><i data-lucide="trash-2"></i></button>
                             </div>
-                            <div class="card-title">${escapeHtml(route.name)}</div>
-                            <div class="card-date">ID: ${route.id}</div>
+                            <div class="card-title"><i data-lucide="car"></i> ${escapeHtml(route.name)}</div>
+                            <div class="route-link-hint"><i data-lucide="external-link"></i> Открыть маршрут в 2ГИС</div>
                         </div>`;
                     });
                 }
@@ -299,26 +298,6 @@
                 });
                 html += `</div>`;
             }
-
-            html += `<div class="overview-block">
-                <div class="overview-label"><i data-lucide="car"></i> Маршруты</div>
-                <div class="route-row">
-                    <span class="route-name">🏠 Дом → Работа</span>
-                    <span class="route-time">${escapeHtml(data.route_to_work)}</span>
-                </div>
-                <div class="route-row">
-                    <span class="route-name">🏢 Работа → Дом</span>
-                    <span class="route-time">${escapeHtml(data.route_to_home)}</span>
-                </div>`;
-            if (data.extra_routes && data.extra_routes.length > 0) {
-                data.extra_routes.forEach(r => {
-                    html += `<div class="route-row">
-                        <span class="route-name">🚗 ${escapeHtml(r.name)}</span>
-                        <span class="route-time">${escapeHtml(r.time)}</span>
-                    </div>`;
-                });
-            }
-            html += `</div>`;
 
             html += `<div class="overview-block">
                 <div class="overview-label"><i data-lucide="check-square"></i> Задачи на сегодня</div>`;
@@ -525,6 +504,17 @@
             await loadData();
         }
 
+        async function openRouteLink(id) {
+            try {
+                const resp = await fetch(`${API}/routes/${id}/link`);
+                if (!resp.ok) throw new Error('Маршрут не найден');
+                const data = await resp.json();
+                window.open(data.link, '_blank');
+            } catch (e) {
+                alert('Ошибка: ' + e.message);
+            }
+        }
+
         function renderStats(data) {
             const content = document.getElementById('content');
             let html = `<div class="stats-grid">
@@ -624,15 +614,6 @@
 
         function copyPassword(pwd) {
             navigator.clipboard.writeText(pwd).then(() => alert('Пароль скопирован')).catch(() => alert('Не удалось скопировать'));
-        }
-
-        async function showRouteTime(id) {
-            try {
-                const resp = await fetch(`${API}/routes/${id}/time`);
-                const data = await resp.json();
-                showModal(`Маршрут «${data.name}»`, `<div class="password-display">${escapeHtml(data.time)}</div>
-                    <div class="modal-buttons"><button class="btn-secondary" onclick="closeModal()">Закрыть</button></div>`);
-            } catch (e) { alert('Ошибка: ' + e.message); }
         }
 
         function openAddModal() {
