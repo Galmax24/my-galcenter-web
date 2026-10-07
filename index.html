@@ -38,7 +38,7 @@
         .fab:active { transform: scale(0.92); background: #4a6b88; }
         .fab svg { width: 26px; height: 26px; }
         .modal { position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8); display: flex; align-items: center; justify-content: center; padding: 20px; z-index: 100; animation: fadeIn 0.2s; backdrop-filter: blur(4px); }
-        .modal-content { background: #1e1e2a; border-radius: 20px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); }
+        .modal-content { background: #1e1e2a; border-radius: 20px; padding: 24px; width: 100%; max-width: 400px; box-shadow: 0 20px 60px rgba(0,0,0,0.6); max-height: 90vh; overflow-y: auto; }
         .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 18px; color: #fff; }
         .modal input, .modal textarea, .modal select { width: 100%; padding: 14px; border-radius: 12px; border: 1px solid #2a2a3a; background: #13131c; color: #e0e0e0; font-size: 14px; margin-bottom: 12px; font-family: inherit; transition: border 0.2s; }
         .modal input:focus, .modal textarea:focus { outline: none; border-color: #5B7C99; }
@@ -49,10 +49,12 @@
         .btn-primary:active { background: #4a6b88; transform: scale(0.97); }
         .btn-secondary { background: #2a2a3a; color: #b8b8c8; }
         .btn-secondary:active { background: #3a3a4a; }
+        .btn-danger { background: #8b3a3a; color: #fff; }
+        .btn-danger:active { background: #6b2a2a; }
         .password-display { background: #13131c; padding: 14px; border-radius: 12px; color: #6a9bc4; font-family: 'SF Mono', monospace; font-size: 14px; word-break: break-all; margin-bottom: 14px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .copy-btn { background: #2a2a3a; border: none; color: #b8b8c8; padding: 8px 12px; border-radius: 8px; cursor: pointer; font-size: 13px; }
         .copy-btn:active { background: #5B7C99; color: #fff; }
-        .sidebar { position: fixed; top: 0; left: -300px; width: 300px; height: 100%; background: #181822; z-index: 200; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 24px 20px; box-shadow: 4px 0 30px rgba(0,0,0,0.7); }
+        .sidebar { position: fixed; top: 0; left: -300px; width: 300px; height: 100%; background: #181822; z-index: 200; transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1); padding: 24px 20px; box-shadow: 4px 0 30px rgba(0,0,0,0.7); overflow-y: auto; }
         .sidebar.open { left: 0; }
         .sidebar-logo { font-size: 20px; font-weight: 700; color: #fff; margin-bottom: 28px; letter-spacing: -0.3px; display: flex; align-items: center; gap: 10px; }
         .sidebar-item { padding: 14px 16px; border-radius: 12px; margin-bottom: 6px; cursor: pointer; font-size: 15px; color: #b8b8c8; display: flex; align-items: center; gap: 14px; transition: all 0.15s; font-weight: 500; }
@@ -120,6 +122,15 @@
         .ripple::after { content: ''; position: absolute; top: 50%; left: 50%; width: 5px; height: 5px; background: rgba(255,255,255,0.4); opacity: 0; border-radius: 100%; transform: scale(1) translate(-50%, -50%); transform-origin: 50% 50%; }
         .ripple:active::after { animation: ripple 0.6s ease-out; }
         @keyframes ripple { 0% { transform: scale(0) translate(-50%, -50%); opacity: 0.6; } 100% { transform: scale(30) translate(-50%, -50%); opacity: 0; } }
+        .user-card { background: #1e1e2a; border-radius: 14px; padding: 16px; margin-bottom: 12px; position: relative; }
+        .user-id { font-size: 16px; font-weight: 700; color: #fff; margin-bottom: 8px; }
+        .user-info { font-size: 12px; color: #8a8a9a; margin-bottom: 4px; }
+        .user-actions { display: flex; gap: 6px; margin-top: 12px; flex-wrap: wrap; }
+        .user-actions button { padding: 8px 12px; border-radius: 8px; border: none; font-size: 12px; cursor: pointer; font-weight: 600; }
+        .checkbox-row { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+        .checkbox-item { display: flex; align-items: center; gap: 6px; padding: 8px 12px; background: #2a2a3a; border-radius: 8px; font-size: 13px; cursor: pointer; user-select: none; }
+        .checkbox-item input { width: auto; margin: 0; }
+        .checkbox-item.checked { background: #5B7C99; color: #fff; }
     </style>
 </head>
 <body>
@@ -134,6 +145,7 @@
         <div class="sidebar-item" data-tab="routes" onclick="showTab('routes')"><i data-lucide="car"></i> Маршруты</div>
         <div class="sidebar-item" data-tab="weather" onclick="showTab('weather')"><i data-lucide="cloud-sun"></i> Погода</div>
         <div class="sidebar-item" data-tab="stats" onclick="showTab('stats')"><i data-lucide="bar-chart-3"></i> Статистика</div>
+        <div class="sidebar-item" data-tab="admin" onclick="showTab('admin')" id="admin-tab" style="display:none;"><i data-lucide="settings"></i> Настройки</div>
     </div>
 
     <div class="topbar">
@@ -169,6 +181,20 @@
         let activeTag = null;
         let cities = [];
         let allowedSections = [];
+        let isAdmin = false;
+
+        const SECTION_NAMES = {
+            notes: 'Заметки', tasks: 'Задачи', links: 'Ссылки', routes: 'Маршруты',
+            schedule: 'График', weather: 'Погода', stats: 'Статистика'
+        };
+        const COMMAND_NAMES = {
+            today: '/today — сводка', find: '/find — поиск', task: '/task — задача',
+            tasks: '/tasks — задачи', remind: '/remind — напоминание', reminders: '/reminders — напоминания',
+            link: '/link — ссылка', links: '/links — ссылки', show: '/show — пароль',
+            route: '/route — маршрут', routes: '/routes — маршруты',
+            del_note: '/del_note', del_task: '/del_task', del_link: '/del_link',
+            del_route: '/del_route', del_reminder: '/del_reminder'
+        };
 
         function refreshIcons() {
             if (window.lucide) lucide.createIcons();
@@ -196,9 +222,14 @@
                 const resp = await fetch(`${API}/my_sections`);
                 const data = await resp.json();
                 allowedSections = data.sections || [];
+                isAdmin = data.is_admin || false;
                 document.querySelectorAll('.sidebar-item').forEach(item => {
                     const tab = item.getAttribute('data-tab');
                     if (tab === 'overview') return;
+                    if (tab === 'admin') {
+                        item.style.display = isAdmin ? 'flex' : 'none';
+                        return;
+                    }
                     if (!allowedSections.includes(tab)) {
                         item.style.display = 'none';
                     } else {
@@ -211,7 +242,11 @@
         }
 
         async function showTab(tab) {
-            if (tab !== 'overview' && !allowedSections.includes(tab)) {
+            if (tab === 'admin' && !isAdmin) {
+                alert('Только для владельца');
+                return;
+            }
+            if (tab !== 'overview' && tab !== 'admin' && !allowedSections.includes(tab)) {
                 alert('У вас нет доступа к этому разделу');
                 return;
             }
@@ -219,7 +254,7 @@
             closeSidebar();
             document.querySelectorAll('.sidebar-item').forEach(t => t.classList.remove('active'));
             document.querySelector(`.sidebar-item[data-tab="${tab}"]`).classList.add('active');
-            const titles = { overview: 'Главная', schedule: 'График', notes: 'Заметки', tasks: 'Задачи', links: 'Ссылки', routes: 'Маршруты', weather: 'Погода', stats: 'Статистика' };
+            const titles = { overview: 'Главная', schedule: 'График', notes: 'Заметки', tasks: 'Задачи', links: 'Ссылки', routes: 'Маршруты', weather: 'Погода', stats: 'Статистика', admin: 'Настройки' };
             document.getElementById('page-title').textContent = titles[tab] || tab;
             const showFab = ['notes', 'tasks', 'links', 'routes', 'weather'].includes(tab);
             document.getElementById('fab').style.display = showFab ? 'flex' : 'none';
@@ -239,6 +274,7 @@
                 else if (currentTab === 'routes') url = `${API}/routes`;
                 else if (currentTab === 'weather') url = `${API}/cities`;
                 else if (currentTab === 'stats') url = `${API}/stats`;
+                else if (currentTab === 'admin') url = `${API}/admin/users`;
 
                 const resp = await fetch(url);
                 const data = await resp.json();
@@ -248,6 +284,7 @@
                 if (currentTab === 'notes') { allNotes = data; renderNotes(data); return; }
                 if (currentTab === 'weather') { cities = data; renderWeather(data); return; }
                 if (currentTab === 'stats') { renderStats(data); return; }
+                if (currentTab === 'admin') { renderAdmin(data); return; }
 
                 if (!data || data.length === 0) {
                     content.innerHTML = `<div class="empty"><i data-lucide="inbox"></i><br>Пока ничего нет<br>Нажми «+» чтобы добавить</div>`;
@@ -366,84 +403,35 @@
             refreshIcons();
         }
 
-        function renderMiniCalendar(year, month, workDays) {
-            const dayNames = ['П','В','С','Ч','П','С','В'];
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const daysInMonth = lastDay.getDate();
-            let startWeekday = firstDay.getDay();
-            if (startWeekday === 0) startWeekday = 7;
-            startWeekday -= 1;
-
-            const today = new Date();
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-            let html = '<div class="mini-calendar">';
-            dayNames.forEach(d => { html += `<div class="mini-cal-header">${d}</div>`; });
-            for (let i = 0; i < startWeekday; i++) html += '<div class="mini-cal-day"></div>';
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const isWork = workDays.includes(dateStr);
-                const isToday = dateStr === todayStr;
-                let cls = 'mini-cal-day';
-                if (isWork) cls += ' work';
-                if (isToday) cls += ' today';
-                html += `<div class="${cls}">${d}</div>`;
-            }
-            html += '</div>';
-            return html;
-        }
-
-        function renderSchedule(workDays) {
+        function renderAdmin(users) {
             const content = document.getElementById('content');
-            const year = currentWorkMonth.getFullYear();
-            const month = currentWorkMonth.getMonth();
+            let html = `<button class="btn-primary" style="width:100%;padding:14px;border-radius:12px;border:none;font-weight:600;margin-bottom:16px;cursor:pointer;" onclick="openAddUserModal()">+ Добавить пользователя</button>`;
 
-            let html = `<div class="overview-block">
-                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-                    <button class="btn-icon" onclick="changeMonth(-1)"><i data-lucide="chevron-left"></i></button>
-                    <div style="font-size:16px;font-weight:700;color:#fff;">${monthName(month)} ${year}</div>
-                    <button class="btn-icon" onclick="changeMonth(1)"><i data-lucide="chevron-right"></i></button>
-                </div>
-                ${renderCalendar(year, month, workDays, true)}
-                <div style="margin-top:16px;font-size:13px;color:#6a6a7a;text-align:center;">
-                    Нажми на день, чтобы отметить рабочий
-                </div>
-            </div>`;
+            if (!users || users.length === 0) {
+                html += `<div class="empty"><i data-lucide="users"></i><br>Нет пользователей с доступом</div>`;
+                content.innerHTML = html;
+                refreshIcons();
+                return;
+            }
+
+            users.forEach(u => {
+                const sectionsList = (u.sections || '').split(',').filter(s => s).map(s => SECTION_NAMES[s] || s).join(', ') || '—';
+                const commandsList = (u.bot_commands || '').split(',').filter(c => c).length || 0;
+                html += `<div class="user-card">
+                    <div class="user-id">ID: ${u.user_id}</div>
+                    <div class="user-info">Разделы: ${sectionsList}</div>
+                    <div class="user-info">Команд: ${commandsList}</div>
+                    <div class="user-info">Пароль: ${u.password_used ? 'использован' : (u.bot_password || '—')}</div>
+                    <div class="user-actions">
+                        <button class="btn-primary" onclick="openEditUserModal(${u.user_id})">Изменить</button>
+                        <button class="btn-secondary" onclick="genPassword(${u.user_id})">🔑 Пароль</button>
+                        <button class="btn-secondary" onclick="openSendMessageModal(${u.user_id})">✉️ Сообщение</button>
+                        <button class="btn-danger" onclick="deleteUser(${u.user_id})">Удалить</button>
+                    </div>
+                </div>`;
+            });
             content.innerHTML = html;
             refreshIcons();
-        }
-
-        function renderCalendar(year, month, workDays, interactive) {
-            const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-            const firstDay = new Date(year, month, 1);
-            const lastDay = new Date(year, month + 1, 0);
-            const daysInMonth = lastDay.getDate();
-            let startWeekday = firstDay.getDay();
-            if (startWeekday === 0) startWeekday = 7;
-            startWeekday -= 1;
-
-            const today = new Date();
-            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
-
-            let html = '<div class="calendar">';
-            dayNames.forEach(d => { html += `<div class="cal-header">${d}</div>`; });
-            for (let i = 0; i < startWeekday; i++) html += '<div class="cal-day empty"></div>';
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
-                const isWork = workDays.includes(dateStr);
-                const isToday = dateStr === todayStr;
-                let cls = 'cal-day ripple';
-                if (isWork) cls += ' work';
-                if (isToday) cls += ' today';
-                if (interactive) {
-                    html += `<div class="${cls}" onclick="toggleWorkDay('${dateStr}')">${d}</div>`;
-                } else {
-                    html += `<div class="${cls}">${d}</div>`;
-                }
-            }
-            html += '</div>';
-            return html;
         }
 
         function renderNotes(notes) {
@@ -543,26 +531,87 @@
                 html += `</div>`;
                 el.innerHTML = html;
                 refreshIcons();
-            } catch (e) {
-                console.error(e);
-            }
+            } catch (e) { console.error(e); }
         }
 
-        async function deleteCity(id) {
-            if (!confirm('Удалить город?')) return;
-            await fetch(`${API}/cities/${id}`, { method: 'DELETE' });
-            await loadData();
+        function renderSchedule(workDays) {
+            const content = document.getElementById('content');
+            const year = currentWorkMonth.getFullYear();
+            const month = currentWorkMonth.getMonth();
+
+            let html = `<div class="overview-block">
+                <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+                    <button class="btn-icon" onclick="changeMonth(-1)"><i data-lucide="chevron-left"></i></button>
+                    <div style="font-size:16px;font-weight:700;color:#fff;">${monthName(month)} ${year}</div>
+                    <button class="btn-icon" onclick="changeMonth(1)"><i data-lucide="chevron-right"></i></button>
+                </div>
+                ${renderCalendar(year, month, workDays, true)}
+                <div style="margin-top:16px;font-size:13px;color:#6a6a7a;text-align:center;">
+                    Нажми на день, чтобы отметить рабочий
+                </div>
+            </div>`;
+            content.innerHTML = html;
+            refreshIcons();
         }
 
-        async function openRouteLink(id) {
-            try {
-                const resp = await fetch(`${API}/routes/${id}/link`);
-                if (!resp.ok) throw new Error('Маршрут не найден');
-                const data = await resp.json();
-                openExternalLink(data.link);
-            } catch (e) {
-                alert('Ошибка: ' + e.message);
+        function renderCalendar(year, month, workDays, interactive) {
+            const dayNames = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            let startWeekday = firstDay.getDay();
+            if (startWeekday === 0) startWeekday = 7;
+            startWeekday -= 1;
+
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+            let html = '<div class="calendar">';
+            dayNames.forEach(d => { html += `<div class="cal-header">${d}</div>`; });
+            for (let i = 0; i < startWeekday; i++) html += '<div class="cal-day empty"></div>';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const isWork = workDays.includes(dateStr);
+                const isToday = dateStr === todayStr;
+                let cls = 'cal-day ripple';
+                if (isWork) cls += ' work';
+                if (isToday) cls += ' today';
+                if (interactive) {
+                    html += `<div class="${cls}" onclick="toggleWorkDay('${dateStr}')">${d}</div>`;
+                } else {
+                    html += `<div class="${cls}">${d}</div>`;
+                }
             }
+            html += '</div>';
+            return html;
+        }
+
+        function renderMiniCalendar(year, month, workDays) {
+            const dayNames = ['П','В','С','Ч','П','С','В'];
+            const firstDay = new Date(year, month, 1);
+            const lastDay = new Date(year, month + 1, 0);
+            const daysInMonth = lastDay.getDate();
+            let startWeekday = firstDay.getDay();
+            if (startWeekday === 0) startWeekday = 7;
+            startWeekday -= 1;
+
+            const today = new Date();
+            const todayStr = `${today.getFullYear()}-${String(today.getMonth()+1).padStart(2,'0')}-${String(today.getDate()).padStart(2,'0')}`;
+
+            let html = '<div class="mini-calendar">';
+            dayNames.forEach(d => { html += `<div class="mini-cal-header">${d}</div>`; });
+            for (let i = 0; i < startWeekday; i++) html += '<div class="mini-cal-day"></div>';
+            for (let d = 1; d <= daysInMonth; d++) {
+                const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+                const isWork = workDays.includes(dateStr);
+                const isToday = dateStr === todayStr;
+                let cls = 'mini-cal-day';
+                if (isWork) cls += ' work';
+                if (isToday) cls += ' today';
+                html += `<div class="${cls}">${d}</div>`;
+            }
+            html += '</div>';
+            return html;
         }
 
         function renderStats(data) {
@@ -591,6 +640,123 @@
             </div>`;
             content.innerHTML = html;
             refreshIcons();
+        }
+
+        function openAddUserModal() {
+            showModal('Добавить пользователя', `
+                <input id="u-id" type="number" placeholder="Telegram ID (например, 123456789)">
+                <div style="font-size:12px;color:#6a6a7a;margin-bottom:8px;font-weight:600;">Разделы Mini App:</div>
+                <div class="checkbox-row" id="u-sections">
+                    ${ALL_SECTIONS.map(s => `<label class="checkbox-item"><input type="checkbox" value="${s}"> ${SECTION_NAMES[s]}</label>`).join('')}
+                </div>
+                <div style="font-size:12px;color:#6a6a7a;margin-bottom:8px;font-weight:600;">Команды бота:</div>
+                <div class="checkbox-row" id="u-commands">
+                    ${ALL_COMMANDS.map(c => `<label class="checkbox-item"><input type="checkbox" value="${c}"> ${COMMAND_NAMES[c] || c}</label>`).join('')}
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+                    <button class="btn-primary" onclick="submitAddUser()">Сохранить</button>
+                </div>`);
+        }
+
+        async function submitAddUser() {
+            const userId = parseInt(document.getElementById('u-id').value);
+            if (!userId) { alert('Введи ID'); return; }
+            const sections = [...document.querySelectorAll('#u-sections input:checked')].map(i => i.value).join(',');
+            const commands = [...document.querySelectorAll('#u-commands input:checked')].map(i => i.value).join(',');
+            try {
+                const resp = await fetch(`${API}/admin/users`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_id: userId, sections, bot_commands: commands })
+                });
+                if (!resp.ok) throw new Error('Ошибка');
+                closeModal();
+                await loadData();
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        }
+
+        async function openEditUserModal(userId) {
+            const resp = await fetch(`${API}/admin/users`);
+            const users = await resp.json();
+            const u = users.find(x => x.user_id === userId);
+            if (!u) return;
+            const userSections = (u.sections || '').split(',').filter(s => s);
+            const userCommands = (u.bot_commands || '').split(',').filter(c => c);
+            showModal('Изменить пользователя', `
+                <div style="font-size:14px;color:#6a6a7a;margin-bottom:12px;">ID: ${userId}</div>
+                <div style="font-size:12px;color:#6a6a7a;margin-bottom:8px;font-weight:600;">Разделы Mini App:</div>
+                <div class="checkbox-row" id="e-sections">
+                    ${ALL_SECTIONS.map(s => `<label class="checkbox-item ${userSections.includes(s) ? 'checked' : ''}"><input type="checkbox" value="${s}" ${userSections.includes(s) ? 'checked' : ''}> ${SECTION_NAMES[s]}</label>`).join('')}
+                </div>
+                <div style="font-size:12px;color:#6a6a7a;margin-bottom:8px;font-weight:600;">Команды бота:</div>
+                <div class="checkbox-row" id="e-commands">
+                    ${ALL_COMMANDS.map(c => `<label class="checkbox-item ${userCommands.includes(c) ? 'checked' : ''}"><input type="checkbox" value="${c}" ${userCommands.includes(c) ? 'checked' : ''}> ${COMMAND_NAMES[c] || c}</label>`).join('')}
+                </div>
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+                    <button class="btn-primary" onclick="submitEditUser(${userId})">Сохранить</button>
+                </div>`);
+        }
+
+        async function submitEditUser(userId) {
+            const sections = [...document.querySelectorAll('#e-sections input:checked')].map(i => i.value).join(',');
+            const commands = [...document.querySelectorAll('#e-commands input:checked')].map(i => i.value).join(',');
+            try {
+                await fetch(`${API}/admin/users/${userId}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ sections, bot_commands: commands })
+                });
+                closeModal();
+                await loadData();
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        }
+
+        async function genPassword(userId) {
+            try {
+                const resp = await fetch(`${API}/admin/users/${userId}/password`, { method: 'POST' });
+                const data = await resp.json();
+                showModal('Пароль', `
+                    <div class="password-display"><span>${escapeHtml(data.password)}</span>
+                    <button class="copy-btn" onclick="copyPassword('${escapeHtml(data.password)}')">📋</button></div>
+                    <div style="font-size:12px;color:#6a6a7a;margin-bottom:14px;">Отправь этот пароль пользователю. После ввода он станет недействителен.</div>
+                    <div class="modal-buttons"><button class="btn-secondary" onclick="closeModal()">Закрыть</button></div>`);
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        }
+
+        function openSendMessageModal(userId) {
+            showModal('Отправить сообщение', `
+                <div style="font-size:12px;color:#6a6a7a;margin-bottom:8px;">Пользователю ${userId}</div>
+                <textarea id="msg-text" placeholder="Текст сообщения..."></textarea>
+                <div class="modal-buttons">
+                    <button class="btn-secondary" onclick="closeModal()">Отмена</button>
+                    <button class="btn-primary" onclick="sendMessage(${userId})">Отправить</button>
+                </div>`);
+        }
+
+        async function sendMessage(userId) {
+            const text = document.getElementById('msg-text').value;
+            if (!text) { alert('Введи текст'); return; }
+            try {
+                const resp = await fetch(`${API}/admin/users/${userId}/message`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text })
+                });
+                if (!resp.ok) {
+                    const err = await resp.json();
+                    throw new Error(err.detail || 'Ошибка');
+                }
+                closeModal();
+                alert('Сообщение отправлено');
+            } catch (e) { alert('Ошибка: ' + e.message); }
+        }
+
+        async function deleteUser(userId) {
+            if (!confirm('Удалить доступ для ' + userId + '?')) return;
+            await fetch(`${API}/admin/users/${userId}`, { method: 'DELETE' });
+            await loadData();
         }
 
         function monthName(m) {
@@ -638,7 +804,7 @@
             try {
                 await fetch(`${API}/${type}/${id}`, { method: 'DELETE' });
                 await loadData();
-            } catch (e) { alert('Ошибка удаления: ' + e.message); }
+            } catch (e) { alert('Ошибка: ' + e.message); }
         }
 
         async function markDone(id) {
@@ -654,16 +820,23 @@
                 if (!resp.ok) throw new Error('Пароль не найден');
                 const data = await resp.json();
                 showModal('Пароль', `
-                    <div class="password-display">
-                        <span>${escapeHtml(data.password)}</span>
-                        <button class="copy-btn" onclick="copyPassword('${escapeHtml(data.password)}')">📋</button>
-                    </div>
+                    <div class="password-display"><span>${escapeHtml(data.password)}</span>
+                    <button class="copy-btn" onclick="copyPassword('${escapeHtml(data.password)}')">📋</button></div>
                     <div class="modal-buttons"><button class="btn-secondary" onclick="closeModal()">Закрыть</button></div>`);
             } catch (e) { alert('Ошибка: ' + e.message); }
         }
 
         function copyPassword(pwd) {
-            navigator.clipboard.writeText(pwd).then(() => alert('Пароль скопирован')).catch(() => alert('Не удалось скопировать'));
+            navigator.clipboard.writeText(pwd).then(() => alert('Скопировано')).catch(() => alert('Не удалось скопировать'));
+        }
+
+        async function openRouteLink(id) {
+            try {
+                const resp = await fetch(`${API}/routes/${id}/link`);
+                if (!resp.ok) throw new Error('Маршрут не найден');
+                const data = await resp.json();
+                openExternalLink(data.link);
+            } catch (e) { alert('Ошибка: ' + e.message); }
         }
 
         function openAddModal() {
@@ -744,6 +917,11 @@
                     </div>
                 </div>`;
             refreshIcons();
+            document.querySelectorAll('.checkbox-item input').forEach(cb => {
+                cb.addEventListener('change', () => {
+                    cb.parentElement.classList.toggle('checked', cb.checked);
+                });
+            });
         }
 
         function closeModal() {
@@ -756,6 +934,9 @@
             div.textContent = text;
             return div.innerHTML;
         }
+
+        const ALL_SECTIONS = ["notes", "tasks", "links", "routes", "schedule", "weather", "stats"];
+        const ALL_COMMANDS = ["today", "find", "task", "tasks", "remind", "reminders", "link", "links", "show", "route", "routes", "del_note", "del_task", "del_link", "del_route", "del_reminder"];
 
         (async () => {
             await loadSections();
