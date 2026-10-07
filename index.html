@@ -150,10 +150,18 @@
 
         const originalFetch = window.fetch;
         window.fetch = function(url, options = {}) {
+            options.headers = options.headers || {};
+            
+            // ngrok
             if (typeof url === 'string' && url.includes('ngrok')) {
-                options.headers = options.headers || {};
                 options.headers['ngrok-skip-browser-warning'] = 'true';
             }
+            
+            // Telegram initData
+            if (window.Telegram && window.Telegram.WebApp && window.Telegram.WebApp.initData) {
+                options.headers['X-Tg-Init-Data'] = window.Telegram.WebApp.initData;
+            }
+            
             return originalFetch(url, options);
         };
 
