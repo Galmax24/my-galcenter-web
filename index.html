@@ -143,6 +143,15 @@
 
     <script>
         const API = 'https://elude-mobilize-salvaging.ngrok-free.dev';
+        // Обходим предупреждение ngrok
+const originalFetch = window.fetch;
+window.fetch = function(url, options = {}) {
+    if (typeof url === 'string' && url.includes('ngrok')) {
+        options.headers = options.headers || {};
+        options.headers['ngrok-skip-browser-warning'] = 'true';
+    }
+    return originalFetch(url, options);
+};
         const tg = window.Telegram.WebApp;
         tg.ready();
         tg.expand();
