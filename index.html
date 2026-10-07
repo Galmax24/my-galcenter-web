@@ -70,6 +70,11 @@
         .route-row:last-child { border-bottom: none; padding-bottom: 0; }
         .route-name { font-size: 14px; color: #b8b8c8; display: flex; align-items: center; gap: 8px; }
         .route-time { font-size: 16px; font-weight: 700; color: #6a9bc4; }
+        .route-clickable { cursor: pointer; border-radius: 10px; padding: 12px; margin: 0 -6px; transition: background 0.15s; display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #2a2a3a; }
+        .route-clickable:last-child { border-bottom: none; }
+        .route-clickable:active { background: #2a2a3a; }
+        .route-clickable .route-name { font-size: 15px; color: #fff; }
+        .route-clickable .route-arrow { color: #5B7C99; font-size: 16px; }
         .top-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; margin-bottom: 12px; }
         .weather-card { background: #1e1e2a; border-radius: 16px; padding: 18px; animation: fadeIn 0.3s ease; display: flex; flex-direction: column; justify-content: space-between; }
         .calendar-card { background: #1e1e2a; border-radius: 16px; padding: 14px; animation: fadeIn 0.3s ease; }
@@ -116,7 +121,6 @@
         .ripple::after { content: ''; position: absolute; top: 50%; left: 50%; width: 5px; height: 5px; background: rgba(255,255,255,0.4); opacity: 0; border-radius: 100%; transform: scale(1) translate(-50%, -50%); transform-origin: 50% 50%; }
         .ripple:active::after { animation: ripple 0.6s ease-out; }
         @keyframes ripple { 0% { transform: scale(0) translate(-50%, -50%); opacity: 0.6; } 100% { transform: scale(30) translate(-50%, -50%); opacity: 0; } }
-        .route-link-hint { font-size: 12px; color: #5B7C99; margin-top: 6px; display: flex; align-items: center; gap: 6px; }
     </style>
 </head>
 <body>
@@ -174,6 +178,14 @@
         function closeSidebar() {
             document.getElementById('sidebar').classList.remove('open');
             document.getElementById('overlay').classList.remove('open');
+        }
+
+        function openExternalLink(url) {
+            if (window.Telegram && window.Telegram.WebApp) {
+                window.Telegram.WebApp.openLink(url);
+            } else {
+                window.open(url, '_blank');
+            }
         }
 
         async function showTab(tab) {
@@ -269,6 +281,7 @@
 
             let html = '';
 
+            // Верхний ряд: погода + календарь
             html += `<div class="top-row">
                 <div class="weather-card">
                     <div>
@@ -286,6 +299,7 @@
                 </div>
             </div>`;
 
+            // Напоминания на сегодня
             if (data.reminders_today && data.reminders_today.length > 0) {
                 html += `<div class="overview-block">
                     <div class="overview-label"><i data-lucide="bell"></i> Напоминания на сегодня</div>`;
@@ -299,6 +313,20 @@
                 html += `</div>`;
             }
 
+            // Основные маршруты (кликабельные)
+            if (data.main_routes && data.main_routes.length > 0) {
+                html += `<div class="overview-block">
+                    <div class="overview-label"><i data-lucide="car"></i> Маршруты</div>`;
+                data.main_routes.forEach(route => {
+                    html += `<div class="route-clickable" onclick="openExternalLink('${route.link}')">
+                        <span class="route-name">${escapeHtml(route.name)}</span>
+                        <span class="route-arrow">→</span>
+                    </div>`;
+                });
+                html += `</div>`;
+            }
+
+            // Задачи на сегодня
             html += `<div class="overview-block">
                 <div class="overview-label"><i data-lucide="check-square"></i> Задачи на сегодня</div>`;
             if (data.tasks && data.tasks.length > 0) {
@@ -509,11 +537,7 @@
                 const resp = await fetch(`${API}/routes/${id}/link`);
                 if (!resp.ok) throw new Error('Маршрут не найден');
                 const data = await resp.json();
-                if (window.Telegram && window.Telegram.WebApp) {
-                    window.Telegram.WebApp.openLink(data.link);
-                } else {
-                    window.open(data.link, '_blank');
-                }
+                openExternalLink(data.link);
             } catch (e) {
                 alert('Ошибка: ' + e.message);
             }
